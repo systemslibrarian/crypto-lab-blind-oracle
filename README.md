@@ -23,9 +23,10 @@ Beyond the "the server literally cannot read this" reveal, the demo now makes th
 
 ## When to Use It
 
-- Use it when you must run arithmetic on sensitive values in an untrusted cloud because TFHE-rs lets the server compute directly on ciphertexts.
-- Use it for privacy-preserving analytics proofs of concept because the wire payloads and server responses stay encrypted end to end.
-- Use it for zero-trust multi-tenant compute experiments because the server key enables evaluation but not plaintext recovery.
+- FHE is the right technique when arithmetic on sensitive values has to run on a server you do not trust with the plaintext, because with TFHE-rs the server computes directly on ciphertexts and only the key holder can decrypt the result.
+- It suits privacy-preserving analytics, because the inputs sent to the server and the results it returns stay encrypted end to end.
+- It suits multi-tenant compute where the provider should evaluate but never read, because the server key enables evaluation but not plaintext recovery.
+- The Oracle behind this demo is for demonstration only and should never receive real sensitive values.
 - Do not use it for low-latency, high-throughput production paths where plaintext processing is acceptable because bootstrapping and large ciphertexts add substantial performance overhead.
 - Do NOT treat this as a production cryptographic service — it is a teaching demo with no authentication, rate limiting, or key rotation.
 
