@@ -302,6 +302,34 @@ html[data-theme='light'] .theme-toggle:hover {
   color: rgba(0, 255, 204, 0.8);
 }
 
+.attack-note {
+  margin-top: 16px;
+  border-top: 1px solid rgba(0, 255, 179, 0.2);
+  padding-top: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(230, 255, 248, 0.95);
+}
+
+.attack-note summary {
+  cursor: pointer;
+  color: var(--green);
+  letter-spacing: 0.06em;
+}
+
+.attack-note summary:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
+.attack-note p {
+  margin-bottom: 0;
+}
+
+.attack-note a {
+  color: var(--green);
+}
+
 .zone-subtext-orange {
   color: rgba(255, 123, 69, 0.75);
 }

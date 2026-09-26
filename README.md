@@ -19,7 +19,7 @@ Two things follow, and the demo now does both:
 
 **Toy scale, stated on the page and here:** the original scheme needs a modulus of millions of bits before its approximate-GCD hardness assumption means anything. This is not secure encryption and must never be used as such. What is exactly right about it is the arithmetic and the ceiling — and that ceiling is precisely what TFHE's programmable bootstrapping exists to reset, and what the Oracle's response time is paying for.
 
-Beyond the "the server literally cannot read this" reveal, the demo now makes the _mechanism_ visible: a side-by-side **plaintext world vs ciphertext world** panel runs both computations at once so the homomorphic correspondence `Enc(a) ⊞ Enc(b) → decrypt = a + b` is shown rather than asserted; **value-dependent ciphertext fingerprints** plus a **Re-encrypt same values** control demonstrate that TFHE encryption is probabilistic (same number, different ciphertext, still-correct sum); a **schematic wire** animates the actual payloads (`ct_a`, `ct_b`, `serverKey`, `ct_result`) crossing the trust boundary while the secret key stays pinned client-side; and a short **gate-bootstrapping / noise-budget** explainer plus an honest cost framing replace the earlier "unlimited computation depth" over-claim.
+Beyond showing that the server's evaluation key cannot decrypt, the demo now makes the _mechanism_ visible: a side-by-side **plaintext world vs ciphertext world** panel runs both computations at once so the homomorphic correspondence `Enc(a) ⊞ Enc(b) → decrypt = a + b` is shown rather than asserted; **value-dependent ciphertext fingerprints** plus a **Re-encrypt same values** control demonstrate that TFHE encryption is probabilistic (same number, different ciphertext, still-correct sum); a **schematic wire** animates the actual payloads (`ct_a`, `ct_b`, `serverKey`, `ct_result`) crossing the trust boundary while the secret key stays pinned client-side; and a short **gate-bootstrapping / noise-budget** explainer plus an honest cost framing replace the earlier "unlimited computation depth" over-claim.
 
 ## When to Use It
 
@@ -34,7 +34,7 @@ Beyond the "the server literally cannot read this" reveal, the demo now makes th
 
 **[systemslibrarian.github.io/crypto-lab-blind-oracle](https://systemslibrarian.github.io/crypto-lab-blind-oracle/)**
 
-Watch a server add two numbers it can never read: the math happens on ciphertext, and only your browser holds the key to decrypt the answer. Enter two secret values in the 0–255 range, encrypt and transmit them, and trigger homomorphic addition on the oracle. The UI shows ciphertext previews with value-dependent fingerprints, a schematic of the payloads crossing the wire, the parallel plaintext-vs-ciphertext tracks that fill in as you compute, a gate-bootstrapping/noise explainer, response time (the price of one homomorphic add), the oracle log, and a modal showing exactly what the oracle received — without plaintext access. Below that, the **local multiply bench** does real homomorphic multiplications in your browser with no oracle at all, until the noise budget runs out. Controls: **SECRET VALUE A**, **SECRET VALUE B**, **ENCRYPT & TRANSMIT**, **RE-ENCRYPT SAME VALUES** (fresh randomness, different ciphertext), **COMPUTE (FHE ADD)**, **MULTIPLY — WHY SLOWER?** (explains the operation/cost tradeoff, and links to the local bench that performs one), **WHAT THE ORACLE SAW**, and **RESET**.
+Watch a server add two encrypted numbers: it holds an evaluation key that cannot decrypt, while your browser holds the decryption key and keeps the result verdict local. Enter two secret values in the 0–255 range, encrypt and transmit them, and trigger homomorphic addition on the oracle. The UI shows ciphertext previews with value-dependent fingerprints, a schematic of the payloads crossing the wire, the parallel plaintext-vs-ciphertext tracks that fill in as you compute, a gate-bootstrapping/noise explainer, response time (the price of one homomorphic add), the oracle log, and a modal showing exactly what the oracle received — without plaintext access. Below that, the **local multiply bench** does real homomorphic multiplications in your browser with no oracle at all, until the noise budget runs out. Controls: **SECRET VALUE A**, **SECRET VALUE B**, **ENCRYPT & TRANSMIT**, **RE-ENCRYPT SAME VALUES** (fresh randomness, different ciphertext), **COMPUTE (FHE ADD)**, **MULTIPLY — WHY SLOWER?** (explains the operation/cost tradeoff, and links to the local bench that performs one), **WHAT THE ORACLE SAW**, and **RESET**.
 
 > First load generates an FHE key pair in your browser (~10–15s) — a boot overlay shows progress. On the free-tier backend, the oracle may also take a moment to wake from cold start.
 
@@ -45,6 +45,7 @@ Backend API source: <https://github.com/systemslibrarian/blind-oracle-api>
 - **Performance overhead:** FHE ciphertexts are large and bootstrapping is slow, so throughput and latency are far worse than plaintext computation.
 - **Limited operations:** practical FHE supports a constrained set of operations and bit-widths (here, addition over `FheUint8`); arbitrary programs are expensive or infeasible.
 - **No result integrity:** homomorphic evaluation hides inputs but does not by itself prove the server computed the right function — a malicious server could return a wrong-but-valid ciphertext.
+- **Malicious-server feedback oracle:** a server can alter returned ciphertexts and learn from a client that reports decryption errors. Chaturvedi et al. demonstrated full key recovery against TFHE/FHEW under repeated client feedback, which does not demonstrate a break of this demo. Blind Oracle compares the result in the browser and sends neither the plaintext nor its match/mismatch verdict back to the server. This closes that feedback path in the demonstrated flow, but does not establish side-channel resistance on the client. See the [original attack (ePrint 2022/1563)](https://eprint.iacr.org/2022/1563) and the [2025 survey (ePrint 2025/867)](https://eprint.iacr.org/2025/867).
 - **Metadata still leaks:** request timing, ciphertext sizes, and access patterns remain visible to the server even though plaintext does not.
 - **Client-side key management:** security depends entirely on the client key never leaking — lose it and the data is unrecoverable, expose it and confidentiality is gone.
 - **The Oracle is a free-tier service and can be unavailable.** The demo handles that explicitly (degraded mode) rather than pretending otherwise, but the headline add genuinely does require it.
@@ -52,7 +53,7 @@ Backend API source: <https://github.com/systemslibrarian/blind-oracle-api>
 
 ## Real-World Usage
 
-- FHE targets privacy-preserving cloud computation, where a provider processes data it can never read.
+- FHE targets privacy-preserving cloud computation, where a provider processes ciphertext without a decryption key; application-level feedback and side channels still require separate controls.
 - Use cases include encrypted machine-learning inference and private analytics over sensitive records.
 - Private database and set queries can be served without revealing the query or contents to the server.
 - TFHE-rs (Zama) is an actively developed library bringing FHE to practical experimentation, though real deployments remain early and specialized.
@@ -124,6 +125,7 @@ In development, `/api` is proxied to the hosted backend via Vite (see `vite.conf
 
 - **The client key never leaves the browser.** Only the _compressed server key_ (an evaluation key that cannot decrypt) and ciphertexts are transmitted.
 - **Original plaintext values are never sent.** They are held in memory client-side purely so the UI can confirm the decrypted sum.
+- **The local comparison is not sent back.** Neither a decryption error nor the match/mismatch verdict is reported to the Oracle. A production client must preserve this boundary when handling malicious results.
 - The client asserts the oracle's `plaintextAccessed === false` policy flag on every response and surfaces an error otherwise.
 - This is a teaching demo. It does not implement authentication, rate limiting, or key rotation, and should not be treated as a production cryptographic service.
 

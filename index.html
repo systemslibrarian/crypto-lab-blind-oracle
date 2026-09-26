@@ -319,6 +319,25 @@
             The Oracle is a demonstration server: it is for demonstration only and should never
             receive real sensitive values.
           </p>
+          <details class="attack-note">
+            <summary>WHEN THE SERVER IS MALICIOUS</summary>
+            <p>
+              An evaluation key cannot directly decrypt. But FHE does not authenticate the server's
+              answer: a malicious server can return altered ciphertext. In a different TFHE/FHEW
+              application, researchers recovered a client key by inducing decryption errors and
+              repeatedly learning from the client's reports of those errors. Here the decrypted
+              result and match/mismatch verdict stay in your browser; this page sends neither back
+              to the Oracle. That closes this particular feedback path, not every possible client
+              side channel.
+              <a href="https://eprint.iacr.org/2022/1563" target="_blank" rel="noopener noreferrer"
+                >Original attack (2022)</a
+              >
+              ·
+              <a href="https://eprint.iacr.org/2025/867" target="_blank" rel="noopener noreferrer"
+                >FHE side-channel survey (2025)</a
+              >
+            </p>
+          </details>
         </div>
 
         <label class="field-label" for="value-a">SECRET VALUE A (0-255)</label>
@@ -780,8 +799,9 @@
         </p>
         <p>
           The subtle part: the server holds only an <em>evaluation key</em>. It can transform
-          ciphertexts (including bootstrapping) but has no path to the plaintext — that requires the
-          client secret key, which never leaves your browser.
+          ciphertexts (including bootstrapping) but cannot decrypt with that key. The client secret
+          key never leaves your browser. A malicious server may still learn from a client that
+          reports decryption failures; this demo keeps that verdict local.
         </p>
         <p><em>This is the real thing — with real limits, honestly shown.</em></p>
       </div>
