@@ -122,6 +122,14 @@ html[data-theme='light'] .skip-link {
   min-height: 100vh;
 }
 
+/* A grid item's automatic minimum is its min-content width, and a scroller's
+   min-content is its content's: the multiply bench's table (736px, inside an
+   overflow-x:auto wrap) widened the single phone column to 770px instead of
+   scrolling, and body's overflow-x:hidden then clipped every zone. */
+.app-grid > * {
+  min-width: 0;
+}
+
 /* Accent/tint/text colors map to this demo's theme vars:
    --green -> accent for title/label/why-tint, #e8f5f0 body copy (AA on --bg in
    both themes: dark 15:1, light bg is pale so we darken via --ink below). */
