@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { expectNoHorizontalOverflow } from './reflow'
+import { bootReady, mockOracle } from './support'
 
 /**
  * WCAG regression gate. Deploys are already gated on the demo's unit tests;
@@ -124,4 +126,62 @@ test('no WCAG A/AA violations in dark theme', async ({ page }) => {
     'rgba(0, 255, 179, 0.059)',
     'rgba(0, 255, 179, 0.02)'
   ])
+})
+
+/**
+ * WCAG 1.4.10 reflow at phone width.
+ *
+ * At 380px the single phone column was 770px wide with every scan green: the
+ * column track's minimum is its items' min-content, and the multiply bench's
+ * 736px table sat in a scroller whose min-content is its content's. body's
+ * overflow-x:hidden then clipped every zone at the viewport edge instead of
+ * letting it scroll, so the right half of each panel was simply unreachable.
+ */
+test.describe('reflow at 380px', () => {
+  test.use({ viewport: { width: 380, height: 800 } })
+  test.setTimeout(120_000)
+
+  test('no horizontal page scroll on first paint, details open', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('.')
+    await expect(page.locator('.cl-hero')).toBeVisible()
+    await expandAll(page)
+    await expectNoHorizontalOverflow(page, '380px / initial')
+  })
+
+  test('no horizontal page scroll through a round trip and the multiply bench', async ({
+    page
+  }) => {
+    await mockOracle(page)
+    await bootReady(page)
+    await expectNoHorizontalOverflow(page, '380px / ready')
+
+    await page.fill('[data-input-a]', '42')
+    await page.fill('[data-input-b]', '7')
+    await page.click('[data-encrypt]')
+    await expect(page.locator('[data-compute]')).toBeEnabled()
+    await page.click('[data-compute]')
+    await expect(page.locator('[data-state]')).toHaveText('REVEALED', { timeout: 60_000 })
+    await expect(page.locator('[data-corr-mismatch]')).toBeVisible()
+    await expectNoHorizontalOverflow(page, '380px / revealed, mismatch')
+
+    await page.fill('[data-toy-a]', '11')
+    await page.fill('[data-toy-b]', '13')
+    for (let i = 0; i < 3; i++) await page.click('[data-toy-mul]')
+    await expect(page.locator('[data-toy-verdict]')).toHaveClass(/toy-verdict-bad/)
+    await expandAll(page)
+    await expectNoHorizontalOverflow(page, '380px / bench over budget, details open')
+  })
+
+  test('no horizontal page scroll on the offline path', async ({ page }) => {
+    await page.route('**/health', (route) => route.abort())
+    await page.route('**/compute/add', (route) => route.abort())
+    await page.goto('.')
+    const offlineBtn = page.locator('[data-boot-offline]')
+    await expect(offlineBtn).toBeVisible({ timeout: 90_000 })
+    await expectNoHorizontalOverflow(page, '380px / boot offline prompt')
+    await offlineBtn.click()
+    await expect(page.locator('[data-offline-banner]')).toBeVisible()
+    await expectNoHorizontalOverflow(page, '380px / offline banner')
+  })
 })
