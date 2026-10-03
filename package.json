@@ -17,7 +17,7 @@
     "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
-    "tfhe": "^0.8.1"
+    "tfhe": "^1.8.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
