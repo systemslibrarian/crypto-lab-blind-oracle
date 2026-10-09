@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run test:publish-request && tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
@@ -14,7 +14,8 @@
     "test:a11y": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "gh workflow run deploy.yml --repo systemslibrarian/crypto-lab-blind-oracle --ref main",
+    "test:publish-request": "node --test tests/publish-request.node.mjs"
   },
   "dependencies": {
     "tfhe": "^0.8.1"
@@ -23,7 +24,6 @@
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "coi-serviceworker": "^0.1.7",
-    "gh-pages": "^6.3.0",
     "prettier": "^3.9.9",
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
