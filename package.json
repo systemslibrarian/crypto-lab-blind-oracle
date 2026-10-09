@@ -18,7 +18,7 @@
     "test:publish-request": "node --test tests/publish-request.node.mjs"
   },
   "dependencies": {
-    "tfhe": "^0.8.1"
+    "tfhe": "^1.8.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
