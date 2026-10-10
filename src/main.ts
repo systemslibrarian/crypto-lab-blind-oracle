@@ -670,7 +670,7 @@ function toyVerdictFor(step: ChainStep): string {
       ? 'correct — inside budget'
       : 'WRONG despite budget — this should not happen'
   }
-  return step.correct ? 'over budget, correct by luck' : 'WRONG — noise passed the ceiling'
+  return step.correct ? 'outside budget, observed match' : 'WRONG — noise passed the ceiling'
 }
 
 function renderToyChain(): void {
@@ -692,7 +692,8 @@ function renderToyChain(): void {
 
   const last = toySteps[toySteps.length - 1]
   toyCaptionEl.textContent = last
-    ? `Secret p is ${TOY_P_BITS} bits, so the budget is ${last.budgetBits} bits of noise. ${toySteps.length} step(s) so far.`
+    ? `Unsigned budget: 0 ≤ noise < p, where p = ${toyChain!.key.p} (${TOY_P_BITS} bits). ` +
+      `The table shows bit lengths; verdicts use exact integers. ${toySteps.length} step(s) so far.`
     : 'No chain yet.'
 
   if (!last) {
@@ -718,10 +719,11 @@ function renderToyChain(): void {
     `against a ceiling of ${firstBroken.budgetBits}. That step decrypted to ${firstBroken.decrypted} ` +
     `where the plaintext answer is ${firstBroken.expected}` +
     (firstBroken.correct
-      ? ' — it happens to agree this time, which past the ceiling is luck rather than a guarantee.'
+      ? ' — an observed match outside the no-wrap interval, not a general correctness guarantee.'
       : '.') +
-    ' Nothing here can fix it: this scheme has no bootstrapping. Resetting the noise after every ' +
-    'operation is precisely what TFHE spends its time on, and precisely what the Oracle above is paying for.'
+    ' This scheme has no bootstrapping or noise refresh. Some later wrap counts can preserve the ' +
+    'low byte, but arbitrary later operations are no longer guaranteed correct. TFHE uses ' +
+    'programmable bootstrapping to refresh its own ciphertexts; this tiny model does not implement it.'
 }
 
 function toyApply(op: 'add' | 'multiply'): void {
