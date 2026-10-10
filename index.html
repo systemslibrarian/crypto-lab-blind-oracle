@@ -670,15 +670,19 @@
           only describes.
         </p>
         <p class="toy-scale">
-          <strong>Toy scale, stated plainly.</strong> This is DGHV (van
-          Dijk–Gentry–Halevi–Vaikuntanathan, 2010) in its symmetric form:
+          <strong>Toy scale, stated plainly.</strong> This is a DGHV-inspired (van
+          Dijk–Gentry–Halevi–Vaikuntanathan, 2010) unsigned, base-256 teaching model:
           <code>Enc(m) = m + 256r + qp</code>, <code>Dec(c) = (c mod p) mod 256</code>, with a
-          48-bit secret <code>p</code>. The original scheme needs a modulus of millions of bits
-          before its hardness assumption means anything, so
+          48-bit secret <code>p</code>. The original paper's security analysis does not apply to
+          this tiny adaptation, so
           <strong>this is not secure encryption</strong>
-          and must never be used as such. What is exactly right about it is the arithmetic: addition
-          adds the noise, multiplication multiplies it, and when the noise passes p/2 decryption
-          stops being correct. That ceiling is the reason TFHE bootstraps.
+          and must never be used as such. Here <code>c mod p</code> is the unsigned residue in
+          <code>[0,p)</code>: addition adds the tracked noise and multiplication multiplies it.
+          Correctness is guaranteed while <code>0 ≤ noise &lt; p</code>. At <code>p</code> reduction
+          first wraps; beyond it a byte can still match, but arbitrary operations are no longer
+          guaranteed correct. The original DGHV paper uses centered residues and a <code>p/2</code>
+          bound, which is a different decoder. This bench shows noise growth and wrapping; it does
+          not implement TFHE's parameters or programmable bootstrapping.
         </p>
 
         <div class="toy-controls">
