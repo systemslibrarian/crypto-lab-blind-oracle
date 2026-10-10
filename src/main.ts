@@ -721,7 +721,7 @@ function renderToyChain(): void {
     (firstBroken.correct
       ? ' — an observed match outside the no-wrap interval, not a general correctness guarantee.'
       : '.') +
-    ' This scheme has no bootstrapping or noise refresh. Some later wrap counts can preserve the ' +
+    ' There is no noise refresh here: this scheme has no bootstrapping. Some later wrap counts can preserve the ' +
     'low byte, but arbitrary later operations are no longer guaranteed correct. TFHE uses ' +
     'programmable bootstrapping to refresh its own ciphertexts; this tiny model does not implement it.'
 }
