@@ -5,9 +5,9 @@ import { expect, type Page } from '@playwright/test'
  *
  * The Oracle is a remote service, so the browser tests stand in for it with
  * page.context().route. The mock never invents a ciphertext: it echoes ct_a back as the
- * result, which is a genuinely valid FheUint8 under the browser's own client
- * key. With b = 0 that echo IS the correct sum; with b != 0 it is a wrong
- * answer the page has to notice.
+ * result, which is a genuinely valid, safely serialized FheUint8 under the
+ * browser's own client key. With b = 0 that echo IS the correct sum; with b !=
+ * 0 it is a wrong answer the page has to notice.
  */
 export async function mockOracle(page: Page): Promise<() => number> {
   let computeCalls = 0
