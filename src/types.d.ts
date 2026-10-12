@@ -19,13 +19,13 @@ declare module 'tfhe' {
 
   export class TfheCompressedServerKey {
     static new(clientKey: TfheClientKey): TfheCompressedServerKey
-    serialize(): Uint8Array
+    safe_serialize(serializedSizeLimit: bigint): Uint8Array
   }
 
   export class FheUint8 {
     static encrypt_with_client_key(value: number, clientKey: TfheClientKey): FheUint8
-    static deserialize(bytes: Uint8Array): FheUint8
-    serialize(): Uint8Array
+    static safe_deserialize(bytes: Uint8Array, serializedSizeLimit: bigint): FheUint8
+    safe_serialize(serializedSizeLimit: bigint): Uint8Array
     decrypt(clientKey: TfheClientKey): number
   }
 }
