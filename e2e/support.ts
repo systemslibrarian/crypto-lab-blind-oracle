@@ -29,7 +29,8 @@ export async function mockOracle(page: Page): Promise<() => number> {
         operation: 'add',
         plaintextAccessed: false,
         scheme: 'TFHE-rs (mocked in test)',
-        bootstrapping: 'programmable_bootstrapping_per_operation'
+        bootstrapping: 'programmable_bootstrapping_per_operation',
+        tfheVersion: '1.8'
       })
     })
   })
