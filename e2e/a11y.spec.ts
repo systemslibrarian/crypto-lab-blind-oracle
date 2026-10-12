@@ -174,8 +174,8 @@ test.describe('reflow at 380px', () => {
   })
 
   test('no horizontal page scroll on the offline path', async ({ page }) => {
-    await page.route('**/health', (route) => route.abort())
-    await page.route('**/compute/add', (route) => route.abort())
+    await page.context().route('**/health', (route) => route.abort())
+    await page.context().route('**/compute/add', (route) => route.abort())
     await page.goto('.')
     const offlineBtn = page.locator('[data-boot-offline]')
     await expect(offlineBtn).toBeVisible({ timeout: 90_000 })

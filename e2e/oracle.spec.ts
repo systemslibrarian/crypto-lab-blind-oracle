@@ -6,7 +6,7 @@ import { bootReady, mockOracle } from './support'
  * Oracle is not there.
  *
  * The Oracle is a remote service, so these tests stand in for it with
- * page.route. The mock never invents a ciphertext: it echoes ct_a straight back
+ * page.context().route. The mock never invents a ciphertext: it echoes ct_a straight back
  * as the result. That is a genuinely valid FheUint8 under the browser's own
  * client key, which makes the assertions real ones —
  *
@@ -34,7 +34,7 @@ async function encryptAndCompute(page: Page, a: number, b: number): Promise<void
 test('the browser decrypts the Oracle result to the right sum and earns the match', async ({
   page
 }) => {
-  await mockOracle(page)
+  const computeCalls = await mockOracle(page)
   await bootReady(page)
   // b = 0, so echoing ct_a back is the correct sum: the decrypted value must be
   // 42 and both tracks must agree.
@@ -46,12 +46,13 @@ test('the browser decrypts the Oracle result to the right sum and earns the matc
   await expect(page.locator('[data-corr-verdict]')).toBeVisible()
   await expect(page.locator('[data-corr-mismatch]')).toBeHidden()
   await expect(page.locator('[data-result-announce]')).toContainText('matching the plaintext track')
+  expect(computeCalls()).toBe(1)
 })
 
 test('a wrong ciphertext from the Oracle is reported as a mismatch, not a match', async ({
   page
 }) => {
-  await mockOracle(page)
+  const computeCalls = await mockOracle(page)
   await bootReady(page)
   // b = 7, so ct_a is NOT a valid answer. The page decrypts it to 42 and must
   // notice that 42 is not 49.
@@ -62,11 +63,12 @@ test('a wrong ciphertext from the Oracle is reported as a mismatch, not a match'
   await expect(page.locator('[data-corr-mismatch]')).toBeVisible()
   await expect(page.locator('[data-corr-verdict]')).toBeHidden()
   await expect(page.locator('[data-result-announce]')).toContainText('does NOT match')
+  expect(computeCalls()).toBe(1)
 })
 
 test('an unreachable Oracle degrades instead of dead-ending', async ({ page }) => {
-  await page.route('**/health', (route) => route.abort())
-  await page.route('**/compute/add', (route) => route.abort())
+  await page.context().route('**/health', (route) => route.abort())
+  await page.context().route('**/compute/add', (route) => route.abort())
   await page.goto('.')
 
   const offlineBtn = page.locator('[data-boot-offline]')

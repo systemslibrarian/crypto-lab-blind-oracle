@@ -10,9 +10,10 @@
  * than asserted.
  *
  * THE SCHEME
- * DGHV (van Dijk, Gentry, Halevi, Vaikuntanathan 2010), symmetric-key variant,
- * generalised from bits to a base-256 message space so it lines up with the
- * FheUint8 the Oracle handles:
+ * DGHV-inspired (van Dijk, Gentry, Halevi, Vaikuntanathan 2010), with unsigned
+ * residues and a base-256 message space so it lines up with the FheUint8 the
+ * Oracle handles. The original paper uses centered residues and bit messages;
+ * its p/2 bound does not describe this unsigned adaptation:
  *
  *     Enc(m) = m + B*r + q*p          (p secret, B = 256, r small, q large)
  *     Dec(c) = (c mod p) mod B
@@ -21,14 +22,17 @@
  * because both operations pass straight through the p-multiple. The noise term
  * (m + B*r) adds on addition and MULTIPLIES on multiplication — which is why an
  * addition chain runs for hundreds of steps here and a multiplication chain dies
- * on the third.
+ * on the third with the default parameters. For a consistent ciphertext,
+ * 0 <= noise < p guarantees correctness: unsigned reduction has not wrapped.
+ * Beyond that interval a byte can still match; this does not restore a general
+ * correctness guarantee for later operations.
  *
  * SCALE, STATED PLAINLY
  * These parameters are chosen so the noise ceiling is reachable in three clicks:
- * p is 48 bits where the original paper needs a modulus of millions of bits for
- * the approximate-GCD problem to be hard. This is NOT secure encryption and must
- * not be used as such. It is a working model of the noise budget, and the noise
- * budget is exactly what it is here to show.
+ * p is 48 bits. The original paper's security analysis does not apply to this
+ * tiny base-256 model. This is NOT secure encryption and must not be used as
+ * such. It demonstrates local noise growth and a first modulus wrap, not TFHE's
+ * parameters or a bootstrapping implementation.
  */
 
 export const TOY_BASE = 256
@@ -47,8 +51,8 @@ export interface ToyKey {
  * The noise is bookkeeping for the page, never an input to decryption: `c` is
  * the whole ciphertext and `toyDecrypt` touches nothing else. It has to be
  * tracked explicitly because it cannot be recovered from `c` once it passes p —
- * `c mod p` is a representative, and a representative is always smaller than
- * p/2 whether or not the real noise was. `noiseIsConsistent()` below re-derives
+ * `c mod p` is an unsigned representative in [0,p), whatever the full noise was.
+ * `noiseIsConsistent()` below re-derives
  * the invariant (c - noise is a multiple of p) so the bookkeeping cannot drift
  * from the ciphertext it describes.
  */
@@ -72,9 +76,9 @@ export function toyKeyGen(): ToyKey {
   return { p: randomBigInt(TOY_P_BITS) | 1n }
 }
 
-/** The largest noise magnitude a ciphertext can carry and still decrypt. */
+/** Exclusive upper boundary of the nonnegative no-wrap interval: 0 <= noise < p. */
 export function noiseBudget(key: ToyKey): bigint {
-  return key.p / 2n
+  return key.p
 }
 
 export function budgetBits(key: ToyKey): number {
@@ -110,8 +114,7 @@ export function noiseBits(ct: ToyCiphertext): number {
 }
 
 export function withinBudget(ct: ToyCiphertext, key: ToyKey): boolean {
-  const magnitude = ct.noise < 0n ? -ct.noise : ct.noise
-  return magnitude < noiseBudget(key)
+  return ct.noise >= 0n && ct.noise < noiseBudget(key)
 }
 
 export function toyDecrypt(ct: ToyCiphertext, key: ToyKey): number {
@@ -134,7 +137,7 @@ export interface ChainStep {
   correct: boolean
   noiseBits: number
   budgetBits: number
-  /** True while |noise| < p/2 — i.e. while correctness is guaranteed. */
+  /** True in the no-wrap interval 0 <= noise < p for model-generated ciphertexts. */
   withinBudget: boolean
   /** Decimal digits in the ciphertext, so growth is visible. */
   ciphertextDigits: number

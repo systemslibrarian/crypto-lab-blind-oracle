@@ -100,7 +100,7 @@ describe('homomorphic multiplication', () => {
   it('spends the whole budget by the third multiply — the ceiling is real', () => {
     // With these parameters the noise starts at ~2^14 and is multiplied by a
     // fresh ~2^14 every time, so it lands at ~2^28, ~2^42, ~2^56 while the
-    // budget is ~2^47. Two multiplies fit; the third cannot.
+    // exclusive no-wrap boundary p is 48 bits. Two multiplies fit; the third cannot.
     const key = toyKeyGen()
     const one = toyMul(toyEncrypt(7, key), toyEncrypt(9, key))
     const two = toyMul(one, toyEncrypt(9, key))
@@ -115,9 +115,9 @@ describe('homomorphic multiplication', () => {
   })
 
   it('loses correctness once the budget is gone', () => {
-    // Over budget, a correct answer is luck rather than a guarantee: the
-    // reduction mod p wraps and the low byte is no longer the product. Assert
-    // the guarantee statistically rather than pretending it is deterministic.
+    // Outside the no-wrap interval, agreement is not generally guaranteed.
+    // Particular wrap counts can still preserve a byte. This controls the
+    // observed frequency for the random default chain, not a universal theorem.
     let wrong = 0
     const runs = 50
     for (let i = 0; i < runs; i += 1) {

@@ -15,9 +15,11 @@ Two things follow, and the demo now does both:
 
 ### The local multiply bench
 
-`src/toyFhe.ts` implements DGHV (van Dijk–Gentry–Halevi–Vaikuntanathan, 2010) in its symmetric form: `Enc(m) = m + 256r + qp`, `Dec(c) = (c mod p) mod 256`. Addition adds the noise term; multiplication multiplies it. With a 48-bit secret `p` the budget is 47 bits of noise, so a chain of hundreds of additions stays correct while the **third** multiplication overruns the ceiling and decryption starts returning the wrong number — which the bench reports, per step, against the plaintext answer it should have produced.
+`src/toyFhe.ts` implements a DGHV-inspired (van Dijk–Gentry–Halevi–Vaikuntanathan, 2010) unsigned, base-256 teaching model: `Enc(m) = m + 256r + qp`, `Dec(c) = (c mod p) mod 256`. Addition adds the tracked noise term; multiplication multiplies it. The decoder reduces into `[0,p)`, so the exact first no-wrap interval is `0 ≤ noise < p`, including the entire interval between `p/2` and `p`. The table displays bit lengths, while the verdict checks exact integers; equal bit lengths alone do not establish whether noise is below `p`. With the default parameters, hundreds of additions stay inside this interval while the **third** multiplication crosses it. Each step reports actual decryption against the expected plaintext byte.
 
-**Toy scale, stated on the page and here:** the original scheme needs a modulus of millions of bits before its approximate-GCD hardness assumption means anything. This is not secure encryption and must never be used as such. What is exactly right about it is the arithmetic and the ceiling — and that ceiling is precisely what TFHE's programmable bootstrapping exists to reset, and what the Oracle's response time is paying for.
+**Toy scale, stated on the page and here:** the original paper's security analysis does not apply to this tiny 48-bit adaptation. This is not secure encryption and must never be used as such. [DGHV 2010, §2](https://www.uvm.edu/~cvincen1/files/teaching/pcmi/DGHV2010.pdf) defines centered residues in `(-p/2,p/2]`; its `p/2` bound belongs to that decoder, not this unsigned byte model. At `noise = p` the first wrap changes the decoded byte. Beyond the no-wrap interval, particular wrap counts can preserve the byte (for example, 256 wraps because `p` is odd), but an observed match does not restore a general correctness guarantee. The bench demonstrates local noise growth and wrapping; it does not reproduce TFHE's parameters or implement programmable bootstrapping.
+
+Verification includes fixed-key controls at `floor(p/2)`, `p-1`, `p`, `p+1`, negative noise and a matching byte after 256 wraps. A production-browser control runs the actual bench with scoped toy randomness after real TFHE key generation: 128 additions and two multiplications reach noise `129 × 8192³` between `p/2` and `p`; the next multiplication wraps and decodes to a demonstrably different byte. The backend compute endpoint is mocked in browser CI, so those controls do not establish remote-service availability or correct remote evaluation.
 
 Beyond showing that the server's evaluation key cannot decrypt, the demo now makes the _mechanism_ visible: a side-by-side **plaintext world vs ciphertext world** panel runs both computations at once so the homomorphic correspondence `Enc(a) ⊞ Enc(b) → decrypt = a + b` is shown rather than asserted; **value-dependent ciphertext fingerprints** plus a **Re-encrypt same values** control demonstrate that TFHE encryption is probabilistic (same number, different ciphertext, still-correct sum); a **schematic wire** animates the actual payloads (`ct_a`, `ct_b`, `serverKey`, `ct_result`) crossing the trust boundary while the secret key stays pinned client-side; and a short **gate-bootstrapping / noise-budget** explainer plus an honest cost framing replace the earlier "unlimited computation depth" over-claim.
 
@@ -49,7 +51,7 @@ Backend API source: <https://github.com/systemslibrarian/blind-oracle-api>
 - **Metadata still leaks:** request timing, ciphertext sizes, and access patterns remain visible to the server even though plaintext does not.
 - **Client-side key management:** security depends entirely on the client key never leaking — lose it and the data is unrecoverable, expose it and confidentiality is gone.
 - **The Oracle is a free-tier service and can be unavailable.** The demo handles that explicitly (degraded mode) rather than pretending otherwise, but the headline add genuinely does require it.
-- **The local bench is a teaching model, not encryption.** 48-bit DGHV is trivially breakable. It is there for the noise budget, which it models exactly.
+- **The local bench is a teaching model, not secure encryption.** Its 48-bit DGHV-inspired modulus is trivially breakable. The unsigned no-wrap interval applies to this local model, not to TFHE's parameters or security.
 
 ## Real-World Usage
 
@@ -119,7 +121,7 @@ In development, `/api` is proxied to the hosted backend via Vite (see `vite.conf
 | `npm run format`       | Format the codebase with Prettier                                                                  |
 | `npm run format:check` | Verify formatting (used in CI)                                                                     |
 | `npm run test:a11y`    | Playwright: axe WCAG A/AA scans plus the functional Oracle, degraded-mode and multiply-bench specs |
-| `npm run deploy`       | Build and publish `dist/` to GitHub Pages                                                          |
+| `npm run deploy`       | Request the existing gated main-branch publishing workflow                                         |
 
 ## Security Notes
 
