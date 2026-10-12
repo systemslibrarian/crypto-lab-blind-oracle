@@ -15,10 +15,16 @@ import { uint8ArrayToBase64, base64ToUint8Array, bytesToHex, isValidFheUint8 } f
 
 export interface FheContext {
   clientKey: TfheClientKey // Decryption only — never serialized, never leaves browser
-  serverKeyB64: string // Compressed server key — sent to server for evaluation
+  serverKeyB64: string // Safely serialized compressed server key — sent for evaluation
   ready: boolean
   keyGenTimeMs: number // For display in oracle log
 }
+
+// TFHE safe serialization enforces explicit byte ceilings while adding type
+// and version metadata. The HTTP body limit is the tighter bound for requests;
+// these limits also protect local serialization/deserialization calls.
+const SERVER_KEY_SIZE_LIMIT = 96n * 1024n * 1024n
+const CIPHERTEXT_SIZE_LIMIT = 16n * 1024n * 1024n
 
 export interface EncryptedValue {
   base64: string // Serialized FheUint8 → base64
@@ -56,8 +62,8 @@ export async function initFhe(): Promise<FheContext> {
   // Derive compressed server key for evaluation (safe to transmit)
   const compressedServerKey = TfheCompressedServerKey.new(clientKey)
 
-  // Serialize server key to bytes, then base64
-  const serverKeyBytes = compressedServerKey.serialize()
+  // Versioned, type-checked serialization shared with the Rust service.
+  const serverKeyBytes = compressedServerKey.safe_serialize(SERVER_KEY_SIZE_LIMIT)
   const serverKeyB64 = uint8ArrayToBase64(serverKeyBytes)
 
   const keyGenTimeMs = Math.round(performance.now() - startTime)
@@ -84,8 +90,8 @@ export async function encryptValue(value: number, ctx: FheContext): Promise<Encr
   // Encrypt with client key
   const encrypted = FheUint8.encrypt_with_client_key(value, ctx.clientKey)
 
-  // Serialize to bytes
-  const bytes = encrypted.serialize()
+  // Versioned, type-checked serialization shared with the Rust service.
+  const bytes = encrypted.safe_serialize(CIPHERTEXT_SIZE_LIMIT)
   const base64 = uint8ArrayToBase64(bytes)
   const fullHex = bytesToHex(bytes)
 
@@ -103,8 +109,8 @@ export async function decryptResult(ctBase64: string, ctx: FheContext): Promise<
   // Decode base64 to bytes
   const bytes = base64ToUint8Array(ctBase64)
 
-  // Deserialize to FheUint8
-  const ciphertext = FheUint8.deserialize(bytes)
+  // Reject wrong types, unsupported versions and oversized ciphertexts.
+  const ciphertext = FheUint8.safe_deserialize(bytes, CIPHERTEXT_SIZE_LIMIT)
 
   // Decrypt with client key
   const result = ciphertext.decrypt(ctx.clientKey)
