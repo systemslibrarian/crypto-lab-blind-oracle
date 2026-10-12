@@ -6,6 +6,7 @@ export interface ComputeResult {
   plaintextAccessed: boolean
   scheme: string
   bootstrapping: string
+  tfheVersion: string
   responseTimeMs: number
 }
 
@@ -74,7 +75,8 @@ export async function computeAdd(
         body: JSON.stringify({
           serverKey: serverKeyB64,
           ctA: ctABase64,
-          ctB: ctBBase64
+          ctB: ctBBase64,
+          tfheVersion: '1.8'
         })
       },
       DEFAULT_TIMEOUT_MS
@@ -105,9 +107,10 @@ export async function computeAdd(
       plaintextAccessed?: boolean
       scheme?: string
       bootstrapping?: string
+      tfheVersion?: string
     }
 
-    if (!json.ctResult || !json.operation) {
+    if (!json.ctResult || !json.operation || json.tfheVersion !== '1.8') {
       throw new OracleOfflineError('Malformed compute response')
     }
 
@@ -117,6 +120,7 @@ export async function computeAdd(
       plaintextAccessed: Boolean(json.plaintextAccessed),
       scheme: json.scheme ?? 'TFHE-rs',
       bootstrapping: json.bootstrapping ?? 'gate_bootstrapping_per_operation',
+      tfheVersion: json.tfheVersion,
       responseTimeMs: elapsed
     }
   } catch (error) {

@@ -65,7 +65,8 @@ describe('computeAdd', () => {
     operation: 'add',
     plaintextAccessed: false,
     scheme: 'TFHE-rs',
-    bootstrapping: 'gate_bootstrapping_per_operation'
+    bootstrapping: 'gate_bootstrapping_per_operation',
+    tfheVersion: '1.8'
   }
 
   it('maps a successful response into a ComputeResult', async () => {
@@ -75,11 +76,19 @@ describe('computeAdd', () => {
     expect(result.operation).toBe('add')
     expect(result.plaintextAccessed).toBe(false)
     expect(result.scheme).toBe('TFHE-rs')
+    expect(result.tfheVersion).toBe('1.8')
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit
+    expect(JSON.parse(String(request.body))).toEqual({
+      serverKey: 'key',
+      ctA: 'ctA',
+      ctB: 'ctB',
+      tfheVersion: '1.8'
+    })
     expect(typeof result.responseTimeMs).toBe('number')
   })
 
   it('coerces a missing plaintextAccessed flag to false', async () => {
-    const body = { ctResult: 'x', operation: 'add' }
+    const body = { ctResult: 'x', operation: 'add', tfheVersion: '1.8' }
     fetchMock.mockResolvedValue(mockResponse({ ok: true, status: 200, body }))
     const result = await computeAdd('key', 'ctA', 'ctB')
     expect(result.plaintextAccessed).toBe(false)
@@ -105,6 +114,17 @@ describe('computeAdd', () => {
 
   it('throws OracleOfflineError on a malformed success body', async () => {
     fetchMock.mockResolvedValue(mockResponse({ ok: true, status: 200, body: { operation: 'add' } }))
+    await expect(computeAdd('key', 'ctA', 'ctB')).rejects.toThrow('Malformed compute response')
+  })
+
+  it('rejects a response from a mismatched TFHE runtime', async () => {
+    fetchMock.mockResolvedValue(
+      mockResponse({
+        ok: true,
+        status: 200,
+        body: { ctResult: 'x', operation: 'add', tfheVersion: '0.8' }
+      })
+    )
     await expect(computeAdd('key', 'ctA', 'ctB')).rejects.toThrow('Malformed compute response')
   })
 
