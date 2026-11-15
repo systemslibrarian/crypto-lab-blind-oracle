@@ -65,7 +65,7 @@ describe('computeAdd', () => {
     operation: 'add',
     plaintextAccessed: false,
     scheme: 'TFHE-rs',
-    bootstrapping: 'gate_bootstrapping_per_operation',
+    bootstrapping: 'programmable_bootstrapping_per_operation',
     tfheVersion: '1.8'
   }
 
@@ -93,6 +93,9 @@ describe('computeAdd', () => {
     const result = await computeAdd('key', 'ctA', 'ctB')
     expect(result.plaintextAccessed).toBe(false)
     expect(result.scheme).toBe('TFHE-rs') // default applied
+    // Each FheUint8 block operation runs a programmable bootstrap; gate
+    // bootstrapping is TFHE's boolean API, which this demo does not use.
+    expect(result.bootstrapping).toBe('programmable_bootstrapping_per_operation')
   })
 
   it('throws OracleInitializingError on HTTP 503', async () => {

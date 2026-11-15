@@ -119,7 +119,7 @@ export async function computeAdd(
       operation: json.operation,
       plaintextAccessed: Boolean(json.plaintextAccessed),
       scheme: json.scheme ?? 'TFHE-rs',
-      bootstrapping: json.bootstrapping ?? 'gate_bootstrapping_per_operation',
+      bootstrapping: json.bootstrapping ?? 'programmable_bootstrapping_per_operation',
       tfheVersion: json.tfheVersion,
       responseTimeMs: elapsed
     }

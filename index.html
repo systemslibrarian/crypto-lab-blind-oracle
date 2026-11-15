@@ -16,14 +16,14 @@
     <meta property="og:title" content="Blind Oracle — Fully Homomorphic Encryption Demo" />
     <meta
       property="og:description"
-      content="Watch a server compute on encrypted data it can never read. Real TFHE-rs programmable bootstrapping, running in your browser."
+      content="Watch a server compute on encrypted data it can never read: your browser encrypts with real TFHE-rs, and the server adds the ciphertexts with programmable bootstrapping."
     />
     <meta property="og:url" content="https://systemslibrarian.github.io/crypto-lab-blind-oracle/" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Blind Oracle — Fully Homomorphic Encryption Demo" />
     <meta
       name="twitter:description"
-      content="Watch a server compute on encrypted data it can never read. Real TFHE-rs programmable bootstrapping, running in your browser."
+      content="Watch a server compute on encrypted data it can never read: your browser encrypts with real TFHE-rs, and the server adds the ciphertexts with programmable bootstrapping."
     />
 
     <link
@@ -643,10 +643,10 @@
               </li>
               <li>
                 <strong>Why bootstrapping exists:</strong> each add grows the noise strip. Do too
-                many and the noise overruns the value slot — decryption returns garbage. Gate
-                bootstrapping resets the noise back down after each gate, at real cost, so the
-                computation can keep going. That is the rise-then-reset the noise budget above is
-                about.
+                many and the noise overruns the value slot — decryption returns garbage.
+                Programmable bootstrapping resets the noise back down after each block operation, at
+                real cost, so the computation can keep going. That is the rise-then-reset the noise
+                budget above is about.
               </li>
             </ul>
           </div>

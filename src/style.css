@@ -1474,7 +1474,7 @@ html[data-theme='light'] .response-cost {
   color: #a8431b;
 }
 
-/* ── Noise budget / gate bootstrapping explainer ── */
+/* ── Noise budget / programmable bootstrapping explainer ── */
 
 .noise-explainer {
   border: 1px solid rgba(255, 255, 255, 0.15);
