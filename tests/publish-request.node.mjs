@@ -8,7 +8,7 @@ import { fileURLToPath, URL } from 'node:url'
 import process from 'node:process'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const npmCli = join(process.execPath, '..', '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js')
+const npmCli = process.env.npm_execpath
 
 // Replace only the external GitHub boundary; exercise the real npm script.
 // Neither control dispatches a workflow or uploads any local build.
@@ -21,7 +21,9 @@ function request(exitCode) {
   )
   chmodSync(gh, 0o700)
   try {
-    return spawnSync(process.execPath, [npmCli, 'run', 'deploy', '--silent'], {
+    const command = npmCli ? process.execPath : 'npm'
+    const args = npmCli ? [npmCli, 'run', 'deploy', '--silent'] : ['run', 'deploy', '--silent']
+    return spawnSync(command, args, {
       cwd: root,
       env: {
         ...process.env,
