@@ -94,9 +94,37 @@ test('changing an operand restarts the chain rather than continuing a stale one'
   await expect(rows(page)).toHaveCount(2)
 
   await page.fill('[data-toy-b]', '5')
-  await page.locator('[data-toy-b]').blur()
   await expect(rows(page)).toHaveCount(0)
 
   await page.click('[data-toy-mul]')
   await expect(rows(page).nth(1).locator('td').nth(3)).toHaveText('15')
+})
+
+test('the local bench rejects invalid operands without substituting default numbers', async ({
+  page
+}) => {
+  const a = page.locator('[data-toy-a]')
+  const b = page.locator('[data-toy-b]')
+  const multiply = page.locator('[data-toy-mul]')
+
+  for (const input of [a, b]) {
+    for (const invalid of ['', '-1', '256', '2.5']) {
+      await input.fill(invalid)
+      await expect(input).toHaveAttribute('aria-invalid', 'true')
+      await expect(page.locator('[data-toy-status]')).toContainText('0 to 255')
+      await expect(multiply).toBeDisabled()
+      await expect(page.locator('[data-toy-add]')).toBeDisabled()
+      await expect(rows(page)).toHaveCount(0)
+    }
+    await input.fill('0')
+    await expect(input).toHaveAttribute('aria-invalid', 'false')
+  }
+
+  await a.fill('255')
+  await multiply.click()
+  await expect(rows(page).nth(1).locator('td').nth(4)).toHaveText('0')
+  await b.fill('1')
+  await expect(rows(page)).toHaveCount(0)
+  await multiply.click()
+  await expect(rows(page).nth(1).locator('td').nth(4)).toHaveText('255')
 })

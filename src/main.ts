@@ -655,13 +655,15 @@ resetBtn.addEventListener('click', () => {
 let toyChain: ToyChain | null = null
 const toySteps: ChainStep[] = []
 
-function readToyOperands(): { a: number; b: number } {
-  const clamp = (raw: string, fallback: number): number => {
-    const n = Number(raw)
-    if (!Number.isInteger(n) || n < 0 || n > 255) return fallback
-    return n
-  }
-  return { a: clamp(toyAInput.value, 12), b: clamp(toyBInput.value, 21) }
+function readToyOperands(): { a: number; b: number } | null {
+  const a = toyAInput.value.trim()
+  const b = toyBInput.value.trim()
+  const aValid = isValidByte(a)
+  const bValid = isValidByte(b)
+  toyAInput.setAttribute('aria-invalid', String(!aValid))
+  toyBInput.setAttribute('aria-invalid', String(!bValid))
+  toyMulBtn.disabled = toyAddBtn.disabled = !aValid || !bValid
+  return aValid && bValid ? { a: Number(a), b: Number(b) } : null
 }
 
 function toyVerdictFor(step: ChainStep): string {
@@ -727,7 +729,12 @@ function renderToyChain(): void {
 }
 
 function toyApply(op: 'add' | 'multiply'): void {
-  const { a, b } = readToyOperands()
+  const operands = readToyOperands()
+  if (!operands) {
+    toyReset()
+    return
+  }
+  const { a, b } = operands
   if (!toyChain) {
     toyChain = new ToyChain(a)
     toySteps.length = 0
@@ -745,7 +752,9 @@ function toyApply(op: 'add' | 'multiply'): void {
 function toyReset(): void {
   toyChain = null
   toySteps.length = 0
-  toyStatusEl.textContent = 'Bench idle. Press an operation to encrypt a and start a chain.'
+  toyStatusEl.textContent = readToyOperands()
+    ? 'Bench idle. Press an operation to encrypt a and start a chain.'
+    : 'Enter a whole number from 0 to 255 for each operand.'
   renderToyChain()
 }
 
@@ -754,7 +763,7 @@ toyAddBtn.addEventListener('click', () => toyApply('add'))
 toyResetBtn.addEventListener('click', toyReset)
 // Changing the operands starts a fresh chain rather than silently continuing
 // one built from different numbers.
-toyAInput.addEventListener('change', toyReset)
-toyBInput.addEventListener('change', toyReset)
+toyAInput.addEventListener('input', toyReset)
+toyBInput.addEventListener('input', toyReset)
 
 void boot()
